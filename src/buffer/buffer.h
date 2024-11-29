@@ -9,6 +9,7 @@ namespace easy3d {
 		vk::DeviceMemory memory;
 		Device& device;
 		size_t size;
+		void* map;
 		Buffer(Device& device, size_t size,vk::BufferUsageFlags usage, vk::MemoryPropertyFlags property);
 		~Buffer();
 	private:

@@ -9,6 +9,8 @@ namespace easy3d {
 		Instance();
 		~Instance();
 	private:
+		VkDebugUtilsMessengerEXT debugMessenger;
+		VkResult CreateDebugMessenger();
 		void create_vkInstance();
 	};
 }

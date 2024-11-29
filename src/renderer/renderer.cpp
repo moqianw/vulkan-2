@@ -7,6 +7,12 @@ namespace easy3d {
         glm::vec2(-0.5,0.5)
     };
     const std::array<Uniform<glm::vec3>,1> colors{ glm::vec3(1.0,1.0,0.0) };
+    std::array<Uniform<glm::mat4>, 3> matrixs{
+        glm::mat4(1.0),
+        glm::mat4(1.0),
+        glm::mat4(1.0)
+    };
+    float r = 0.001;
 	Renderer::Renderer()
 	{
         try {
@@ -74,7 +80,13 @@ namespace easy3d {
         //绑定渲染管线
         frame.cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, context.renderprocess->pipeline);
         vk::DeviceSize offset = 0;
-        frame.cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, context.renderprocess->layout, 0, sets_[currentFrame_], {});
+        //数据更新
+        matrixs[2].data = glm::rotate(matrixs[2].data, r, glm::vec3(0.0, 0.0, 1.0));
+
+        bufferUniformData();
+
+
+        frame.cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, context.renderprocess->layout, 0, {sets_[currentFrame_] }, {});
         frame.cmdBuffer.bindVertexBuffers(0, VertexBuffer.device->buffer, offset);
         frame.cmdBuffer.draw(3, 1, 0, 0);
         frame.cmdBuffer.endRenderPass();
@@ -121,8 +133,7 @@ namespace easy3d {
     void Renderer::bufferVertexData()
     {
         auto& device = Context::GetInstance().device->device;
-        void* ptr = device.mapMemory(VertexBuffer.host->memory, 0, VertexBuffer.host->size);
-        memcpy(ptr, vertices.data(), sizeof(vertices));
+        memcpy(VertexBuffer.host->map, vertices.data(), sizeof(vertices));
         //transformbuffer
         vk::CommandBuffer cmdBuffer_ = cmdPool_->allocateCommandBuffer(1)[0];
         vk::CommandBufferBeginInfo begininfo;
@@ -139,13 +150,13 @@ namespace easy3d {
         Context::GetInstance().queues->queues[0].submit(submitinfo);
         device.waitIdle();
         cmdPool_->freeCommandBuffer(cmdBuffer_);
-        VertexBuffer.host.reset();
+
     }
 
     void Renderer::createUniformBuffer()
     {
-        UniformBuffer.resize(2);
-        for (auto& uniform : UniformBuffer) {
+        UniformBuffer1.resize(2);
+        for (auto& uniform : UniformBuffer1) {
             uniform.host.reset(new Buffer(*Context::GetInstance().device
                 , sizeof(vertices)
                 , vk::BufferUsageFlagBits::eTransferSrc
@@ -155,15 +166,24 @@ namespace easy3d {
                 , vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst
                 , vk::MemoryPropertyFlagBits::eDeviceLocal));
         }
-
+        UniformBuffer2.resize(2);
+        for (auto& uniform : UniformBuffer2) {
+            uniform.host.reset(new Buffer(*Context::GetInstance().device
+                , sizeof(matrixs)
+                , vk::BufferUsageFlagBits::eTransferSrc
+                , vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
+            uniform.device.reset(new Buffer(*Context::GetInstance().device
+                , sizeof(matrixs)
+                , vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst
+                , vk::MemoryPropertyFlagBits::eDeviceLocal));
+        }
     }
 
     void Renderer::bufferUniformData()
     {
         auto& device = Context::GetInstance().device->device;
-        for (auto& uniform : UniformBuffer) {
-            void* ptr = device.mapMemory(uniform.host->memory, 0, uniform.host->size);
-            memcpy(ptr, (void*)colors.data(), sizeof(vertices));
+        for (auto& uniform : UniformBuffer1) {
+            memcpy(uniform.host->map, (void*)colors.data(), sizeof(colors));
             //transformbuffer
             vk::CommandBuffer cmdBuffer_ = cmdPool_->allocateCommandBuffer(1)[0];
             vk::CommandBufferBeginInfo begininfo;
@@ -180,9 +200,28 @@ namespace easy3d {
             Context::GetInstance().queues->queues[0].submit(submitinfo);
             device.waitIdle();
             cmdPool_->freeCommandBuffer(cmdBuffer_);
-            uniform.host.reset();
-        }
 
+        }
+        for (auto& uniform : UniformBuffer2) {
+            memcpy(uniform.host->map, (void*)matrixs.data(), sizeof(matrixs));
+            //transformbuffer
+            vk::CommandBuffer cmdBuffer_ = cmdPool_->allocateCommandBuffer(1)[0];
+            vk::CommandBufferBeginInfo begininfo;
+            begininfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+            cmdBuffer_.begin(begininfo);
+            vk::BufferCopy region;
+            region.setSize(uniform.device->size)
+                .setDstOffset(0)
+                .setSrcOffset(0);
+            cmdBuffer_.copyBuffer(uniform.host->buffer, uniform.device->buffer, region);
+            cmdBuffer_.end();
+            vk::SubmitInfo submitinfo;
+            submitinfo.setCommandBuffers(cmdBuffer_);
+            Context::GetInstance().queues->queues[0].submit(submitinfo);
+            device.waitIdle();
+            cmdPool_->freeCommandBuffer(cmdBuffer_);
+
+        }
     }
 
     void Renderer::initCommandPool()
@@ -194,7 +233,7 @@ namespace easy3d {
     {
 		desPool_.reset(new DescriptorPool(Context::GetInstance().device->device,
 			{
-				{vk::DescriptorType::eUniformBuffer, 2}
+				{vk::DescriptorType::eUniformBuffer, 4}
 			}));
         sets_ = desPool_->allocateDescriptorSet(2, Context::GetInstance().renderprocess->setlayouts);
     }
@@ -203,13 +242,27 @@ namespace easy3d {
     {
         for (int i = 0; i < sets_.size(); i++) {
             vk::DescriptorBufferInfo bufferinfo;
-            bufferinfo.setBuffer(UniformBuffer[i].device->buffer)
+            bufferinfo.setBuffer(UniformBuffer1[i].device->buffer)
                 .setOffset(0)
-                .setRange(UniformBuffer[i].device->size);
+                .setRange(UniformBuffer1[i].device->size);
             vk::WriteDescriptorSet writer;
             writer.setBufferInfo(bufferinfo)
                 .setDescriptorType(vk::DescriptorType::eUniformBuffer)
                 .setDstBinding(0)
+                .setDstSet(sets_[i])
+                .setDstArrayElement(0)
+                .setDescriptorCount(1);
+            Context::GetInstance().device->device.updateDescriptorSets(writer, {});
+        }
+        for (int i = 0; i < sets_.size(); i++) {
+            vk::DescriptorBufferInfo bufferinfo;
+            bufferinfo.setBuffer(UniformBuffer2[i].device->buffer)
+                .setOffset(0)
+                .setRange(UniformBuffer2[i].device->size);
+            vk::WriteDescriptorSet writer;
+            writer.setBufferInfo(bufferinfo)
+                .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                .setDstBinding(1)
                 .setDstSet(sets_[i])
                 .setDstArrayElement(0)
                 .setDescriptorCount(1);

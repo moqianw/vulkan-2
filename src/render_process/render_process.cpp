@@ -44,7 +44,7 @@ namespace easy3d {
 			.setRasterizationSamples(vk::SampleCountFlagBits::e1);
 		createinfo.setPMultisampleState(&multisample);
 		//7 test
-
+		
 		//8 ÑÕÉ«»ìºÏ
 		vk::PipelineColorBlendStateCreateInfo colorblend;
 		vk::PipelineColorBlendAttachmentState attachs;
@@ -61,7 +61,7 @@ namespace easy3d {
 
 		createinfo.setRenderPass(renderpass)
 			.setLayout(layout);
-
+		
 		auto result = device.createGraphicsPipeline(nullptr, createinfo);
 		if (result.result != vk::Result::eSuccess) {
 			throw std::runtime_error("create graphics pipeline failed");
@@ -74,7 +74,7 @@ namespace easy3d {
 
 		vk::DescriptorSetLayoutCreateInfo setcreateinfo;
 		std::vector<vk::DescriptorSetLayoutBinding> bindings = { 
-			Uniform<glm::vec3>::getBinding(0, vk::ShaderStageFlagBits::eFragment) ,
+			Uniform<glm::vec3>::getBinding(0, vk::ShaderStageFlagBits::eFragment),
 			Uniform<glm::mat4>::getBinding(1, vk::ShaderStageFlagBits::eVertex)
 		};
 		setcreateinfo.setBindings(bindings);

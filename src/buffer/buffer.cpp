@@ -6,6 +6,8 @@ namespace easy3d {
 		createBuffer(size, usage);
 		allocateMemory(quiryMemoryInfo(property));
 		bindingMemorytoBuffer();
+		if (property & vk::MemoryPropertyFlagBits::eHostVisible) map = device.device.mapMemory(memory, 0, size);
+		else map = nullptr;
 	}
 	Buffer::~Buffer()
 	{

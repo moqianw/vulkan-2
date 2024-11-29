@@ -27,7 +27,8 @@ namespace easy3d {
 			std::unique_ptr<Buffer> host;
 			std::unique_ptr<Buffer> device;
 		}VertexBuffer;
-		std::vector<Buffers> UniformBuffer;
+		std::vector<Buffers> UniformBuffer1;
+		std::vector<Buffers> UniformBuffer2;
 		std::vector<vk::DescriptorSet> sets_;
 		void createVertexBuffer();
 		void bufferVertexData();

@@ -72,6 +72,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ExternalIncludePath>$(ExternalIncludePath)</ExternalIncludePath>
+    <CustomBuildBeforeTargets>Run</CustomBuildBeforeTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <CustomBuildBeforeTargets>Run</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -121,6 +125,13 @@
       <Command>"glslc" "$(SolutionDir)shader\shader.frag" -o "$(SolutionDir)shader\shader.frag.spv"
 "glslc" "$(SolutionDir)shader\shader.vert" -o "$(SolutionDir)shader\shader.vert.spv"</Command>
     </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>"glslc" "$(SolutionDir)shader\shader.frag" -o "$(SolutionDir)shader\shader.frag.spv"
+"glslc" "$(SolutionDir)shader\shader.vert" -o "$(SolutionDir)shader\shader.vert.spv"</Command>
+      <Message>编译着色器</Message>
+      <Outputs>完成编译</Outputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -146,6 +157,13 @@
       <Command>"glslc" "$(SolutionDir)shader\shader.frag" -o "$(SolutionDir)shader\shader.frag.spv"
 "glslc" "$(SolutionDir)shader\shader.vert" -o "$(SolutionDir)shader\shader.vert.spv"</Command>
     </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>"glslc" "$(SolutionDir)shader\shader.frag" -o "$(SolutionDir)shader\shader.frag.spv"
+"glslc" "$(SolutionDir)shader\shader.vert" -o "$(SolutionDir)shader\shader.vert.spv"</Command>
+      <Message>编译着色器</Message>
+      <Outputs>完成编译</Outputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
